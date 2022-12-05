@@ -1,6 +1,7 @@
-#from django.shortcuts import render
+from django.shortcuts import render
 from django.views.generic import ListView, DetailView
-from .models import Post, Category
+from .models import Post, Category, Tag
+
 
 # Create your views here.
 class PostList(ListView):
@@ -12,8 +13,7 @@ class PostList(ListView):
         context['categories'] = Category.objects.all()
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
         return context
-    #template_name = 'blog/index.html'
-
+    # template_name = 'blog/index.html'
 
 
 class PostDetail(DetailView):
@@ -23,7 +23,8 @@ class PostDetail(DetailView):
         context = super(PostDetail, self).get_context_data()
         context['categories'] = Category.objects.all()
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
-        return  context
+        return context
+
 
 def category_page(request, slug):
     if slug == 'no_category':
@@ -43,7 +44,9 @@ def category_page(request, slug):
             'category': category,
         }
     )
-#def index(request):
+
+
+# def index(request):
 #    posts = Post.objects.all().order_by('-pk')
 
 #    return render(
@@ -54,7 +57,7 @@ def category_page(request, slug):
 #        }
 #    )
 
-#def single_post_page(request, pk):
+# def single_post_page(request, pk):
 #    post = Post.objects.get(pk=pk)
 #
 #    return render(
@@ -64,3 +67,18 @@ def category_page(request, slug):
 #            'post':post,
 #        }
 #    )
+
+def tag_page(request, slug):
+    tag = Tag.objects.get(slug=slug)
+    post_list = tag.post_set.all()
+
+    return render(
+        request,
+        'blog/post_list.html',
+        {
+            'post_list': post_list,
+            'tag': tag,
+            'categories': Category.objects.all(),
+            'no_category_post_count': Post.objects.filter(category=None).count(),
+        }
+    )
