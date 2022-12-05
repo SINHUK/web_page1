@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from . models import Post, Category, Tag
+from .models import Post, Category, Tag
+from django.core.exceptions import PermissionDenied
+
 
 # Create your views here.
-class PostList(ListView) :
+class PostList(ListView):
     model = Post
 
     def get_context_data(self, **kwargs):
@@ -13,8 +15,9 @@ class PostList(ListView) :
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
         return context
 
+
 # Post 상세 보기
-class PostDetail(DetailView) :
+class PostDetail(DetailView):
     model = Post
 
     def get_context_data(self, **kwargs):
@@ -23,8 +26,9 @@ class PostDetail(DetailView) :
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
         return context
 
+
 # CreateView
-class PostCreate(LoginRequiredMixin, UserPassesTestMixin ,CreateView):
+class PostCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Post
     fields = ['title', 'hook_text', 'content', 'head_image', 'file_upload', 'category']
 
@@ -40,11 +44,24 @@ class PostCreate(LoginRequiredMixin, UserPassesTestMixin ,CreateView):
             return redirect('/blog/')
 
 
-def category_page(request, slug) :
-    if slug == 'no_category' :
+class PostUpdate(LoginRequiredMixin, UpdateView):
+    model = Post
+    fields = ['title', 'hook_text', 'content', 'head_image', 'file_upload', 'category', 'tags']
+
+    template_name = 'blog/post_update_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user == self.get_object().author:
+            return super(PostUpdate, self).dispatch(request, *args, **kwargs)
+        else:
+            raise PermissionDenied
+
+
+def category_page(request, slug):
+    if slug == 'no_category':
         category = '미분류'
         post_lsit = Post.objects.filter(category=None)
-    else :
+    else:
         category = Category.objects.get(slug=slug)
         post_list = Post.objects.filter(category=category)
 
@@ -58,6 +75,7 @@ def category_page(request, slug) :
             'category': category,
         }
     )
+
 
 def tag_page(request, slug):
     tag = Tag.objects.get(slug=slug)
