@@ -36,9 +36,9 @@
               <div class="small text-muted">{{ p.create_at }}</div>
               <h2 class="card-title h4">{{ p.title }}</h2>
               {% if p.hook_text %}
-                <h5 class=""text-muted">{{ p.hook_text }}</h5>
+                <h5 class="text-muted">{{ p.hook_text }}</h5>
               {% endif %}
-              <p class="card-text">{{ p.content | truncatewords:45 }}</p>
+              <p class="card-text">{{ p.get_content_markdown | truncatewords_html:45 | safe }}</p>
 
               <!-- 태그 //-->
               {% if p.tags.exists %}
