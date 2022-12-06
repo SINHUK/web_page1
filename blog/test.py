@@ -196,12 +196,12 @@ class TestView(TestCase) :
         response = self.client.get('/blog/create_post/')
         self.assertNotEqual(response.status_code, 200)
 
-        # staff가 아닌 trump가 로그인 한다.
+        # sfaff가 아닌 trump가 로그인을 한다.
         self.client.login(username='trump', password='somepassword')
         response = self.client.get('/blog/create_post')
         self.assertNotEqual(response.status_code, 200)
 
-        # staff인 obama로 로그인 한다.
+        # staff인 obama로 로그인한다.
         self.client.login(username='obama', password='somepassword')
         response = self.client.get('/blog/create_post/')
         self.assertEqual(response.status_code, 200)
@@ -232,14 +232,14 @@ class TestView(TestCase) :
         self.assertTrue(Tag.objects.get(name='한글 태그'))
         self.assertEqual(Tag.objects.count(), 5)
 
+    # 포스트 수정 테스트 코드
     def test_update_post(self):
         update_post_url = f'/blog/update_post/{self.post_003.pk}/'
-
-        # 로그인하지 않은 경우
+        # 로그인 하지 않은 경우
         response = self.client.get(update_post_url)
         self.assertNotEqual(response.status_code, 200)
 
-        # 로그인은 했지만 작성자가 아닌 경우
+        # 로그인은 했지만, 작성자가 아닌 경우
         self.assertNotEqual(self.post_003.author, self.user_trump)
         self.client.login(
             username=self.user_trump.username,
@@ -261,12 +261,17 @@ class TestView(TestCase) :
         main_area = soup.find('div', id='main-area')
         self.assertIn('Edit Post', main_area.text)
 
+        tag_str_input = main_area.find('input', id='id_tags_str')
+        self.assertTrue(tag_str_input)
+        self.assertIn('파이썬 공부; python', tag_str_input.attrs['value'])
+
         response = self.client.post(
             update_post_url,
             {
-                'title': '세 번째 포스트를 수정했습니다.',
+                'title': '세 번째 포스트를 수정했습니다. ',
                 'content': '안녕 세계? 우리는 하나!',
-                'category': self.category_music.pk
+                'category': self.category_music.pk,
+                'tags_str': '파이썬 공부; 한글 태그, some tag'
             },
             follow=True
         )
@@ -275,3 +280,8 @@ class TestView(TestCase) :
         self.assertIn('세 번째 포스트를 수정했습니다.', main_area.text)
         self.assertIn('안녕 세계? 우리는 하나!', main_area.text)
         self.assertIn(self.category_music.name, main_area.text)
+
+        self.assertIn('파이썬 공부', main_area.text)
+        self.assertIn('한글 태그', main_area.text)
+        self.assertIn('some tag', main_area.text)
+        self.assertNotIn('python', main_area.text)
