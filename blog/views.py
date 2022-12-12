@@ -3,12 +3,13 @@ from django.utils.text import slugify
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
-from . models import Post, Category, Tag, Comment
+from .models import Post, Category, Tag, Comment
 from .forms import CommentForm
 from django.core.exceptions import PermissionDenied
 
+
 # Create your views here.
-class PostList(ListView) :
+class PostList(ListView):
     model = Post
 
     def get_context_data(self, **kwargs):
@@ -17,8 +18,9 @@ class PostList(ListView) :
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
         return context
 
+
 # Post 상세 보기
-class PostDetail(DetailView) :
+class PostDetail(DetailView):
     model = Post
 
     def get_context_data(self, **kwargs):
@@ -27,6 +29,7 @@ class PostDetail(DetailView) :
         context['no_category_post_count'] = Post.objects.filter(category=None).count()
         context['comment_form'] = CommentForm
         return context
+
 
 # CreateView
 class PostCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -106,11 +109,12 @@ class PostUpdate(LoginRequiredMixin, UpdateView):
 
         return response
 
-def category_page(request, slug) :
-    if slug == 'no_category' :
+
+def category_page(request, slug):
+    if slug == 'no_category':
         category = '미분류'
         post_lsit = Post.objects.filter(category=None)
-    else :
+    else:
         category = Category.objects.get(slug=slug)
         post_list = Post.objects.filter(category=category)
 
@@ -124,6 +128,7 @@ def category_page(request, slug) :
             'category': category,
         }
     )
+
 
 def tag_page(request, slug):
     tag = Tag.objects.get(slug=slug)
@@ -139,6 +144,7 @@ def tag_page(request, slug):
             'no_category_post_count': Post.objects.filter(category=None).count(),
         }
     )
+
 
 def new_comment(request, pk):
     if request.user.is_authenticated:
@@ -157,6 +163,7 @@ def new_comment(request, pk):
     else:
         raise PermissionDenied
 
+
 class CommentUpdate(LoginRequiredMixin, UpdateView):
     model = Comment
     form_class = CommentForm
@@ -166,3 +173,13 @@ class CommentUpdate(LoginRequiredMixin, UpdateView):
             return super(CommentUpdate, self).dispatch(request, *args, **kwargs)
         else:
             raise PermissionDenied
+
+
+def delete_comment(request, pk):
+    comment = get_object_or_404(Comment, pk=pk)
+    post = comment.post
+    if request.user.is_authenticated and request.user == comment.author:
+        comment.delete()
+        return redirect(post.get_absolute_url())
+    else:
+        raise PermissionDenied
